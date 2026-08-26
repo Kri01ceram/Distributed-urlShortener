@@ -7,18 +7,20 @@ export class UrlController {
   constructor(private readonly service: UrlService) {}
 
   createUrl = async (req: Request, res: Response) => {
-    const { longUrl } = req.body;
+  const { longUrl, expiresAt } = req.body;
 
-    const url = await this.service.createUrl({
-      longUrl,
-    });
+  const url = await this.service.createUrl({
+    longUrl,
+    expiresAt,
+  });
 
-    return res.status(201).json({
-      shortCode: url.shortCode,
-      shortUrl: `http://localhost:3000/${url.shortCode}`,
-      longUrl: url.longUrl,
-    });
-  };
+  return res.status(201).json({
+    shortCode: url.shortCode,
+    shortUrl: `http://localhost:3000/${url.shortCode}`,
+    longUrl: url.longUrl,
+    expiresAt: url.expiresAt,
+  });
+};
 
   redirect = async (req: Request, res: Response) => {
     const shortCode = req.params.shortCode;

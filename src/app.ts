@@ -4,6 +4,7 @@ import helmet from "helmet";
 
 import healthRouter from "./routes/heaalth.routes";
 import urlRouter, { urlController } from "./modules/url/url.routes";
+import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
 
@@ -15,5 +16,7 @@ app.use("/health", healthRouter);
 app.use("/api/v1/urls", urlRouter);
 
 app.get("/:shortCode", urlController.redirect);
+
+app.use(errorHandler);
 
 export default app;
