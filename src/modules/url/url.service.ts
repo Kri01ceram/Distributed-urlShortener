@@ -4,9 +4,13 @@ import { AppError } from "../../config/error";
 import { UrlRepository } from "./url.repository";
 import { validateExpiresAt, validateLongUrl } from "./url.validation";
 import type { CreateUrlRequest } from "./url.types";
+import type { UrlRepositoryInterface } from "./url.repository.interface";
 
 export class UrlService {
-  constructor(private readonly repository: UrlRepository) {}
+  constructor(
+  private readonly repository: UrlRepositoryInterface,
+  private readonly cache: UrlCache
+) {}
 
   async createUrl(data: CreateUrlRequest) {
     validateLongUrl(data.longUrl);

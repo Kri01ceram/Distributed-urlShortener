@@ -1,6 +1,7 @@
 import { prisma } from "../../config/database";
+import type { UrlRepositoryInterface } from "./url.repository.interface";
 
-export class UrlRepository {
+export class UrlRepository implements UrlRepositoryInterface {
   async create(
     shortCode: string,
     longUrl: string,
