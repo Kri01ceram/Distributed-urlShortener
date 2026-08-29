@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import type { Url } from "@prisma/client";
 
 import { AppError } from "../src/config/error";
 import { UrlService } from "../src/modules/url/url.service";
-import type { Url } from "@prisma/client";
+import type { UrlRepositoryInterface } from "../src/modules/url/url.repository.interface";
 
-class FakeUrlRepository {
+class FakeUrlRepository implements UrlRepositoryInterface {
   private urls = new Map<string, Url>();
 
   async create(
@@ -32,24 +33,71 @@ class FakeUrlRepository {
   }
 }
 
+class FakeUrlCache {
+  private cache = new Map<
+    string,
+    {
+      shortCode: string;
+      longUrl: string;
+      expiresAt: string | null;
+    }
+  >();
+
+  async get(shortCode: string) {
+    return this.cache.get(shortCode) ?? null;
+  }
+
+  async set(
+    shortCode: string,
+    url: {
+      shortCode: string;
+      longUrl: string;
+      expiresAt: Date | null;
+    }
+  ) {
+    this.cache.set(shortCode, {
+      shortCode: url.shortCode,
+      longUrl: url.longUrl,
+      expiresAt: url.expiresAt?.toISOString() ?? null,
+    });
+  }
+
+  async delete(shortCode: string) {
+    this.cache.delete(shortCode);
+  }
+}
+
 describe("UrlService", () => {
   test("creates a short URL", async () => {
     const repository = new FakeUrlRepository();
-    const service = new UrlService(repository);
+    const cache = new FakeUrlCache();
+
+    const service = new UrlService(
+      repository,
+      cache
+    );
 
     const result = await service.createUrl({
       longUrl: "https://www.google.com",
     });
 
-    expect(result.longUrl).toBe("https://www.google.com");
+    expect(result.longUrl).toBe(
+      "https://www.google.com"
+    );
+
     expect(result.shortCode).toHaveLength(6);
   });
 
   test("rejects an invalid URL", async () => {
     const repository = new FakeUrlRepository();
-    const service = new UrlService(repository);
+    const cache = new FakeUrlCache();
 
-    expect(
+    const service = new UrlService(
+      repository,
+      cache
+    );
+
+    await expect(
       service.createUrl({
         longUrl: "hello",
       })
@@ -58,9 +106,14 @@ describe("UrlService", () => {
 
   test("rejects an expired expiration date", async () => {
     const repository = new FakeUrlRepository();
-    const service = new UrlService(repository);
+    const cache = new FakeUrlCache();
 
-    expect(
+    const service = new UrlService(
+      repository,
+      cache
+    );
+
+    await expect(
       service.createUrl({
         longUrl: "https://www.google.com",
         expiresAt: "2020-01-01T00:00:00.000Z",
@@ -70,31 +123,38 @@ describe("UrlService", () => {
 
   test("returns null for a missing short code", async () => {
     const repository = new FakeUrlRepository();
-    const service = new UrlService(repository);
+    const cache = new FakeUrlCache();
 
-    const result = await service.getUrl("doesnotexist");
+    const service = new UrlService(
+      repository,
+      cache
+    );
+
+    const result = await service.getUrl(
+      "doesnotexist"
+    );
 
     expect(result).toBeNull();
   });
 
   test("returns null for an expired URL", async () => {
     const repository = new FakeUrlRepository();
+    const cache = new FakeUrlCache();
 
-    const expiredUrl = {
-      shortCode: "expired",
-      longUrl: "https://www.google.com",
-      expiresAt: new Date(Date.now() - 60_000),
-    };
-
-    await repository.create(
-      expiredUrl.shortCode,
-      expiredUrl.longUrl,
-      expiredUrl.expiresAt
+    const service = new UrlService(
+      repository,
+      cache
     );
 
-    const service = new UrlService(repository);
+    await repository.create(
+      "expired",
+      "https://www.google.com",
+      new Date(Date.now() - 60_000)
+    );
 
-    const result = await service.getUrl("expired");
+    const result = await service.getUrl(
+      "expired"
+    );
 
     expect(result).toBeNull();
   });

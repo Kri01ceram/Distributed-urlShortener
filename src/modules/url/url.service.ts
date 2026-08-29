@@ -1,16 +1,19 @@
 import { Prisma } from "@prisma/client";
 
 import { AppError } from "../../config/error";
-import { UrlRepository } from "./url.repository";
-import { validateExpiresAt, validateLongUrl } from "./url.validation";
+import type { UrlCacheInterface } from "./url.cache.interface";
+import { UrlRepositoryInterface } from "./url.repository.interface";
+import {
+  validateExpiresAt,
+  validateLongUrl,
+} from "./url.validation";
 import type { CreateUrlRequest } from "./url.types";
-import type { UrlRepositoryInterface } from "./url.repository.interface";
 
 export class UrlService {
   constructor(
-  private readonly repository: UrlRepositoryInterface,
-  private readonly cache: UrlCache
-) {}
+    private readonly repository: UrlRepositoryInterface,
+    private readonly cache: UrlCacheInterface
+  ) {}
 
   async createUrl(data: CreateUrlRequest) {
     validateLongUrl(data.longUrl);
@@ -45,20 +48,41 @@ export class UrlService {
   }
 
   async getUrl(shortCode: string) {
+    const cached = await this.cache.get(shortCode);
+
+    if (cached) {
+      if (
+        cached.expiresAt &&
+        new Date(cached.expiresAt) <= new Date()
+      ) {
+        await this.cache.delete(shortCode);
+        return null;
+      }
+
+      return cached;
+    }
+
     const url = await this.repository.findByShortCode(shortCode);
 
     if (!url) {
       return null;
     }
 
-    if (url.expiresAt && url.expiresAt <= new Date()) {
+    if (
+      url.expiresAt &&
+      url.expiresAt <= new Date()
+    ) {
       return null;
     }
+
+    await this.cache.set(shortCode, url);
 
     return url;
   }
 
   private generateShortCode(): string {
-    return Math.random().toString(36).substring(2, 8);
+    return Math.random()
+      .toString(36)
+      .substring(2, 8);
   }
 }
