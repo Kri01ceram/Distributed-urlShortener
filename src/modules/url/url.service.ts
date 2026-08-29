@@ -51,16 +51,18 @@ export class UrlService {
     const cached = await this.cache.get(shortCode);
 
     if (cached) {
-      if (
-        cached.expiresAt &&
-        new Date(cached.expiresAt) <= new Date()
-      ) {
-        await this.cache.delete(shortCode);
-        return null;
-      }
 
-      return cached;
-    }
+
+  if (
+    cached.expiresAt &&
+    new Date(cached.expiresAt) <= new Date()
+  ) {
+    await this.cache.delete(shortCode);
+    return null;
+  }
+
+  return cached;
+}
 
     const url = await this.repository.findByShortCode(shortCode);
 
