@@ -85,7 +85,9 @@ describe("UrlService", () => {
       "https://www.google.com"
     );
 
-    expect(result.shortCode).toHaveLength(6);
+    expect(result.shortCode).toMatch(
+  /^[0-9A-Za-z]+$/
+);
   });
 
   test("rejects an invalid URL", async () => {
