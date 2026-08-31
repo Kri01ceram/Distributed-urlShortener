@@ -8,6 +8,7 @@ import {
   validateLongUrl,
 } from "./url.validation";
 import type { CreateUrlRequest } from "./url.types";
+import { generateShortCode } from "./url-code.generator";
 
 export class UrlService {
   constructor(
@@ -21,7 +22,7 @@ export class UrlService {
     const expiresAt = validateExpiresAt(data.expiresAt);
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      const shortCode = this.generateShortCode();
+      const shortCode = generateShortCode();
 
       try {
         return await this.repository.create(
@@ -82,9 +83,5 @@ export class UrlService {
     return url;
   }
 
-  private generateShortCode(): string {
-    return Math.random()
-      .toString(36)
-      .substring(2, 8);
-  }
+
 }
