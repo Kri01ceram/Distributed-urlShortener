@@ -5,6 +5,16 @@ import { AppError } from "../src/config/error";
 import { UrlService } from "../src/modules/url/url.service";
 import type { UrlRepositoryInterface } from "../src/modules/url/url.repository.interface";
 
+class FakeUrlCodeGenerator {
+  private counter = 0;
+
+  generate(): string {
+    this.counter++;
+
+    return `test${this.counter}`;
+  }
+}
+
 class FakeUrlRepository implements UrlRepositoryInterface {
   private urls = new Map<string, Url>();
 
@@ -71,10 +81,12 @@ describe("UrlService", () => {
   test("creates a short URL", async () => {
     const repository = new FakeUrlRepository();
     const cache = new FakeUrlCache();
+    const codeGenerator = new FakeUrlCodeGenerator();
 
     const service = new UrlService(
       repository,
-      cache
+      cache,
+      codeGenerator
     );
 
     const result = await service.createUrl({
@@ -86,17 +98,19 @@ describe("UrlService", () => {
     );
 
     expect(result.shortCode).toMatch(
-  /^[0-9A-Za-z]+$/
-);
+      /^[0-9A-Za-z]+$/
+    );
   });
 
   test("rejects an invalid URL", async () => {
     const repository = new FakeUrlRepository();
     const cache = new FakeUrlCache();
+    const codeGenerator = new FakeUrlCodeGenerator();
 
     const service = new UrlService(
       repository,
-      cache
+      cache,
+      codeGenerator
     );
 
     await expect(
@@ -109,10 +123,12 @@ describe("UrlService", () => {
   test("rejects an expired expiration date", async () => {
     const repository = new FakeUrlRepository();
     const cache = new FakeUrlCache();
+    const codeGenerator = new FakeUrlCodeGenerator();
 
     const service = new UrlService(
       repository,
-      cache
+      cache,
+      codeGenerator
     );
 
     await expect(
@@ -126,10 +142,12 @@ describe("UrlService", () => {
   test("returns null for a missing short code", async () => {
     const repository = new FakeUrlRepository();
     const cache = new FakeUrlCache();
+    const codeGenerator = new FakeUrlCodeGenerator();
 
     const service = new UrlService(
       repository,
-      cache
+      cache,
+      codeGenerator
     );
 
     const result = await service.getUrl(
@@ -142,10 +160,12 @@ describe("UrlService", () => {
   test("returns null for an expired URL", async () => {
     const repository = new FakeUrlRepository();
     const cache = new FakeUrlCache();
+    const codeGenerator = new FakeUrlCodeGenerator();
 
     const service = new UrlService(
       repository,
-      cache
+      cache,
+      codeGenerator
     );
 
     await repository.create(

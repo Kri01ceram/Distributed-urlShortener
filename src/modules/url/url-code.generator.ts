@@ -1,16 +1,21 @@
 import { encodeBase62 } from "../../core/base62";
 import { SnowflakeGenerator } from "../../core/id-generator";
+import type { UrlCodeGeneratorInterface } from "./url-code.generator.interface";
 
-const workerId = BigInt(
-  process.env.WORKER_ID ?? "0"
-);
+export class UrlCodeGenerator
+  implements UrlCodeGeneratorInterface
+{
+  private readonly snowflake: SnowflakeGenerator;
 
-const snowflake = new SnowflakeGenerator(
-  workerId
-);
+  constructor(workerId: bigint) {
+    this.snowflake = new SnowflakeGenerator(
+      workerId
+    );
+  }
 
-export function generateShortCode(): string {
-  const id = snowflake.generate();
+  generate(): string {
+    const id = this.snowflake.generate();
 
-  return encodeBase62(id);
+    return encodeBase62(id);
+  }
 }

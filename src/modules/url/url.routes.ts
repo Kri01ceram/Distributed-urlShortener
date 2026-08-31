@@ -1,22 +1,38 @@
 import { Router } from "express";
 
 import { UrlCache } from "./url.cache";
+import { UrlCodeGenerator } from "./url-code.generator";
 import { UrlController } from "./url.controller";
 import { UrlRepository } from "./url.repository";
 import { UrlService } from "./url.service";
 
-const router = Router();
+export function createUrlRouter(
+  workerId: bigint
+) {
+  const router = Router();
 
-const repository = new UrlRepository();
-const cache = new UrlCache();
+  const repository = new UrlRepository();
+  const cache = new UrlCache();
 
-const service = new UrlService(
-  repository,
-  cache
-);
+  const codeGenerator =
+    new UrlCodeGenerator(workerId);
 
-export const urlController = new UrlController(service);
+  const service = new UrlService(
+    repository,
+    cache,
+    codeGenerator
+  );
 
-router.post("/", urlController.createUrl);
+  const controller =
+    new UrlController(service);
 
-export default router;
+  router.post(
+    "/",
+    controller.createUrl
+  );
+
+  return {
+    router,
+    controller,
+  };
+}

@@ -8,13 +8,15 @@ import {
   validateLongUrl,
 } from "./url.validation";
 import type { CreateUrlRequest } from "./url.types";
-import { generateShortCode } from "./url-code.generator";
+import { UrlCodeGenerator } from "./url-code.generator";
+import type { UrlCodeGeneratorInterface } from "./url-code.generator.interface";
 
 export class UrlService {
   constructor(
-    private readonly repository: UrlRepositoryInterface,
-    private readonly cache: UrlCacheInterface
-  ) {}
+  private readonly repository: UrlRepositoryInterface,
+  private readonly cache: UrlCacheInterface,
+  private readonly codeGenerator: UrlCodeGeneratorInterface
+) {}
 
   async createUrl(data: CreateUrlRequest) {
     validateLongUrl(data.longUrl);
@@ -22,7 +24,7 @@ export class UrlService {
     const expiresAt = validateExpiresAt(data.expiresAt);
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      const shortCode = generateShortCode();
+      const shortCode = this.codeGenerator.generate();
 
       try {
         return await this.repository.create(

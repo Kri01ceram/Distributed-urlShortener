@@ -3,20 +3,31 @@ import cors from "cors";
 import helmet from "helmet";
 
 import healthRouter from "./routes/heaalth.routes";
-import urlRouter, { urlController } from "./modules/url/url.routes";
-import { errorHandler } from "./middleware/error.middleware";
+import { createUrlRouter } from "./modules/url/url.routes";
 
-const app = express();
+export function createApp(workerId: bigint) {
+  const app = express();
 
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
+  app.use(helmet());
+  app.use(cors());
+  app.use(express.json());
 
-app.use("/health", healthRouter);
-app.use("/api/v1/urls", urlRouter);
+  app.use("/health", healthRouter);
 
-app.get("/:shortCode", urlController.redirect);
+  const {
+    router: urlRouter,
+    controller: urlController,
+  } = createUrlRouter(workerId);
 
-app.use(errorHandler);
+  app.use(
+    "/api/v1/urls",
+    urlRouter
+  );
 
-export default app;
+  app.get(
+    "/:shortCode",
+    urlController.redirect
+  );
+
+  return app;
+}
