@@ -20,6 +20,25 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      PORT: 3000
+
+      DATABASE_URL: "postgresql://url_shortener:url_shortener_password@postgres:5432/url_shortener"
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+    depends_on:
+      - postgres
+      - redis
 
 volumes:
   postgres_data:

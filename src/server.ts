@@ -2,7 +2,11 @@ import { createApp } from "./app";
 import { prisma } from "./config/database";
 import { env } from "./config/env";
 import { connectRedis } from "./config/redis";
-import { allocateWorkerId } from "./core/worker-id";
+import {
+  registerWorker,
+  releaseWorker,
+  renewWorker,
+} from "./core/worker-registry";
 
 async function startServer() {
   try {
@@ -19,11 +23,24 @@ async function startServer() {
     );
 
     const workerId =
-      await allocateWorkerId();
+  await registerWorker();
 
-    console.log(
-      `Worker ID allocated: ${workerId}`
-    );
+console.log(
+  `Worker ID registered: ${workerId}`
+);
+const heartbeat = setInterval(
+  async () => {
+    try {
+      await renewWorker(workerId);
+    } catch (error) {
+      console.error(
+        "Failed to renew worker lease:",
+        error
+      );
+    }
+  },
+  10_000
+);
 
     const app = createApp(workerId);
 
@@ -32,6 +49,20 @@ async function startServer() {
         `Server running on http://localhost:${env.port}`
       );
     });
+    const shutdown = async () => {
+  console.log("Shutting down...");
+
+  clearInterval(heartbeat);
+
+  await releaseWorker(workerId);
+
+  await prisma.$disconnect();
+
+  process.exit(0);
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
   } catch (error) {
     console.error(
       "Failed to start server:",

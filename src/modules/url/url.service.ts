@@ -1,4 +1,6 @@
-import { Prisma } from "@prisma/client";
+import {
+  PrismaClientKnownRequestError,
+} from "@prisma/client/runtime/library";
 
 import { AppError } from "../../config/error";
 import type { UrlCacheInterface } from "./url.cache.interface";
@@ -34,7 +36,7 @@ export class UrlService {
         );
       } catch (error) {
         if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error instanceof PrismaClientKnownRequestError &&
           error.code === "P2002"
         ) {
           continue;
