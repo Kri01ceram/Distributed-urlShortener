@@ -7,6 +7,14 @@ import { createUrlRouter } from "./modules/url/url.routes";
 
 export function createApp(workerId: bigint) {
   const app = express();
+  app.use((req, res, next) => {
+  res.setHeader(
+    "X-Worker-ID",
+    workerId.toString()
+  );
+
+  next();
+});
 
   app.use(helmet());
   app.use(cors());

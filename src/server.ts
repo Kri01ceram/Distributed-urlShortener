@@ -46,8 +46,8 @@ const heartbeat = setInterval(
 
     app.listen(env.port, () => {
       console.log(
-        `Server running on http://localhost:${env.port}`
-      );
+  `Worker ${workerId} running on port ${env.port}`
+);
     });
     const shutdown = async () => {
   console.log("Shutting down...");
