@@ -35,6 +35,19 @@ services:
 
       REDIS_HOST: redis
       REDIS_PORT: 6379
+    
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://localhost:3000/health').then(r => { if (!r.ok) process.exit(1) })"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
     depends_on:
       - postgres
