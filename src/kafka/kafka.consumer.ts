@@ -1,6 +1,8 @@
 import type { Consumer, EachMessagePayload } from "kafkajs";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 import { kafka } from "./kafka.client";
+import { prisma } from "../config/database";
 import type { UrlRedirectedEvent } from "./kafka.types";
 
 const consumer: Consumer = kafka.consumer({
@@ -9,10 +11,61 @@ const consumer: Consumer = kafka.consumer({
     "url-shortener-analytics",
 });
 
+function parseRedirectEvent(value: string): UrlRedirectedEvent {
+  const parsed: unknown = JSON.parse(value);
+
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    typeof (parsed as Record<string, unknown>).eventId !== "string" ||
+    (parsed as Record<string, unknown>).eventType !== "url.redirected" ||
+    typeof (parsed as Record<string, unknown>).urlId !== "string" ||
+    typeof (parsed as Record<string, unknown>).shortCode !== "string" ||
+    typeof (parsed as Record<string, unknown>).timestamp !== "string"
+  ) {
+    throw new Error("Invalid redirect event");
+  }
+
+  return parsed as UrlRedirectedEvent;
+}
+
+async function persistRedirectEvent(event: UrlRedirectedEvent): Promise<void> {
+  try {
+    await prisma.redirectEvent.create({
+      data: {
+        eventId: event.eventId,
+        eventType: event.eventType,
+        urlId: BigInt(event.urlId),
+        shortCode: event.shortCode,
+        userAgent: event.userAgent,
+        referer: event.referer,
+        occurredAt: new Date(event.timestamp),
+      },
+    });
+  } catch (error: unknown) {
+    if (
+      error instanceof PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return;
+    }
+
+    throw error;
+  }
+}
+
 export async function connectKafkaConsumer(): Promise<void> {
   const topic =
     process.env.KAFKA_REDIRECT_TOPIC ??
     "redirect-events";
+
+  const admin = kafka.admin();
+  await admin.connect();
+  await admin.createTopics({
+    topics: [{ topic, numPartitions: 1, replicationFactor: 1 }],
+    waitForLeaders: true,
+  });
+  await admin.disconnect();
 
   await consumer.connect();
 
@@ -35,11 +88,15 @@ export async function connectKafkaConsumer(): Promise<void> {
         }
 
         try {
-          const event = JSON.parse(
-            message.value.toString(),
-          ) as UrlRedirectedEvent;
+          const event = parseRedirectEvent(message.value.toString());
 
-          console.log("Redirect event received:", {
+          if (Number.isNaN(new Date(event.timestamp).getTime())) {
+            throw new Error("Invalid redirect event timestamp");
+          }
+
+          await persistRedirectEvent(event);
+
+          console.log("Redirect event persisted:", {
             topic,
             partition,
             offset: message.offset,
@@ -50,6 +107,8 @@ export async function connectKafkaConsumer(): Promise<void> {
             "Failed to process redirect event:",
             error,
           );
+
+          throw error;
         }
       },
     })

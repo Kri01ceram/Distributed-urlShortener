@@ -4,6 +4,7 @@ import {
   connectKafkaConsumer,
   disconnectKafkaConsumer,
 } from "./kafka.consumer";
+import { prisma } from "../config/database";
 
 async function startConsumer() {
   try {
@@ -24,6 +25,7 @@ async function shutdown() {
   console.log("Shutting down Kafka consumer...");
 
   await disconnectKafkaConsumer();
+  await prisma.$disconnect();
 
   process.exit(0);
 }

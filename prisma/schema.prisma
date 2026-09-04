@@ -16,3 +16,19 @@ model Url {
 
   @@index([shortCode])
 }
+
+model RedirectEvent {
+  id        BigInt   @id @default(autoincrement())
+  eventId   String   @unique
+  eventType String
+  urlId     BigInt
+  shortCode String
+  userAgent String?
+  referer   String?
+  occurredAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([urlId])
+  @@index([occurredAt])
+  @@map("redirect_events")
+}
