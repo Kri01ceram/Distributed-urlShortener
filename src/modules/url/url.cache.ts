@@ -1,65 +1,63 @@
 import { redis } from "../../config/redis";
-import type { UrlCacheInterface } from "./url.cache.interface";
+import type {
+  CachedUrl,
+  UrlCacheInterface,
+} from "./url.cache.interface";
 
-interface CachedUrl {
-  shortCode: string;
-  longUrl: string;
-  expiresAt: string | null;
-}
-
-
-export class UrlCache implements UrlCacheInterface  {
-  private readonly prefix = "url:";
+export class UrlCache implements UrlCacheInterface {
+  private readonly ttlSeconds = 60 * 60;
 
   async get(shortCode: string): Promise<CachedUrl | null> {
-    const data = await redis.get(`${this.prefix}${shortCode}`);
+    const value = await redis.get(this.getKey(shortCode));
 
-    if (!data) {
+    if (!value) {
       return null;
     }
 
-    return JSON.parse(data) as CachedUrl;
-  }
-
-  async set(
-    shortCode: string,
-    url: {
+    const parsed = JSON.parse(value) as {
+      id: string;
       shortCode: string;
       longUrl: string;
-      expiresAt: Date | null;
-    }
-  ): Promise<void> {
-    const value: CachedUrl = {
-      shortCode: url.shortCode,
-      longUrl: url.longUrl,
-      expiresAt: url.expiresAt?.toISOString() ?? null,
+      createdAt: string;
+      expiresAt: string | null;
     };
 
-    if (url.expiresAt) {
-      const ttl = Math.ceil(
-        (url.expiresAt.getTime() - Date.now()) / 1000
-      );
+    return {
+      id: BigInt(parsed.id),
+      shortCode: parsed.shortCode,
+      longUrl: parsed.longUrl,
+      createdAt: new Date(parsed.createdAt),
+      expiresAt: parsed.expiresAt
+        ? new Date(parsed.expiresAt)
+        : null,
+    };
+  }
 
-      if (ttl > 0) {
-        await redis.set(
-          `${this.prefix}${shortCode}`,
-          JSON.stringify(value),
-          {
-            EX: ttl,
-          }
-        );
-      }
-
-      return;
-    }
+  async set(shortCode: string, url: CachedUrl): Promise<void> {
+    const serialized = JSON.stringify({
+      id: url.id.toString(),
+      shortCode: url.shortCode,
+      longUrl: url.longUrl,
+      createdAt: url.createdAt.toISOString(),
+      expiresAt: url.expiresAt
+        ? url.expiresAt.toISOString()
+        : null,
+    });
 
     await redis.set(
-      `${this.prefix}${shortCode}`,
-      JSON.stringify(value)
+      this.getKey(shortCode),
+      serialized,
+      {
+        EX: this.ttlSeconds,
+      },
     );
   }
 
   async delete(shortCode: string): Promise<void> {
-    await redis.del(`${this.prefix}${shortCode}`);
+    await redis.del(this.getKey(shortCode));
+  }
+
+  private getKey(shortCode: string): string {
+    return `url:${shortCode}`;
   }
 }

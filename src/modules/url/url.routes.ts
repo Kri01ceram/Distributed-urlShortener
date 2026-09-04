@@ -5,6 +5,7 @@ import { UrlCodeGenerator } from "./url-code.generator";
 import { UrlController } from "./url.controller";
 import { UrlRepository } from "./url.repository";
 import { UrlService } from "./url.service";
+import { kafkaEventPublisher } from "../../kafka/kafka.producer";
 
 export function createUrlRouter(
   workerId: bigint
@@ -18,10 +19,11 @@ export function createUrlRouter(
     new UrlCodeGenerator(workerId);
 
   const service = new UrlService(
-    repository,
-    cache,
-    codeGenerator
-  );
+  repository,
+  cache,
+  codeGenerator,
+  kafkaEventPublisher,
+);
 
   const controller =
     new UrlController(service);

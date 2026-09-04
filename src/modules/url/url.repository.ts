@@ -5,7 +5,7 @@ export class UrlRepository implements UrlRepositoryInterface {
   async create(
     shortCode: string,
     longUrl: string,
-    expiresAt?: Date
+    expiresAt: Date | null,
   ) {
     return prisma.url.create({
       data: {

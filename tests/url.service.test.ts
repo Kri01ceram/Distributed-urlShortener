@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Url } from "@prisma/client";
+
 
 import { AppError } from "../src/config/error";
 import { UrlService } from "../src/modules/url/url.service";
@@ -16,19 +16,19 @@ class FakeUrlCodeGenerator {
 }
 
 class FakeUrlRepository implements UrlRepositoryInterface {
-  private urls = new Map<string, Url>();
+  private readonly urls = new Map<string, CachedUrl>();
 
   async create(
     shortCode: string,
     longUrl: string,
-    expiresAt?: Date
-  ): Promise<Url> {
-    const url: Url = {
+    expiresAt: Date | null,
+  ): Promise<CachedUrl> {
+    const url: CachedUrl = {
       id: BigInt(this.urls.size + 1),
       shortCode,
       longUrl,
       createdAt: new Date(),
-      expiresAt: expiresAt ?? null,
+      expiresAt,
     };
 
     this.urls.set(shortCode, url);
@@ -37,43 +37,30 @@ class FakeUrlRepository implements UrlRepositoryInterface {
   }
 
   async findByShortCode(
-    shortCode: string
-  ): Promise<Url | null> {
+    shortCode: string,
+  ): Promise<CachedUrl | null> {
     return this.urls.get(shortCode) ?? null;
   }
 }
 
-class FakeUrlCache {
-  private cache = new Map<
-    string,
-    {
-      shortCode: string;
-      longUrl: string;
-      expiresAt: string | null;
-    }
-  >();
+import type {
+  CachedUrl,
+  UrlCacheInterface,
+} from "../src/modules/url/url.cache.interface";
 
-  async get(shortCode: string) {
-    return this.cache.get(shortCode) ?? null;
+export class FakeUrlCache implements UrlCacheInterface {
+  private readonly store = new Map<string, CachedUrl>();
+
+  async get(shortCode: string): Promise<CachedUrl | null> {
+    return this.store.get(shortCode) ?? null;
   }
 
-  async set(
-    shortCode: string,
-    url: {
-      shortCode: string;
-      longUrl: string;
-      expiresAt: Date | null;
-    }
-  ) {
-    this.cache.set(shortCode, {
-      shortCode: url.shortCode,
-      longUrl: url.longUrl,
-      expiresAt: url.expiresAt?.toISOString() ?? null,
-    });
+  async set(shortCode: string, url: CachedUrl): Promise<void> {
+    this.store.set(shortCode, url);
   }
 
-  async delete(shortCode: string) {
-    this.cache.delete(shortCode);
+  async delete(shortCode: string): Promise<void> {
+    this.store.delete(shortCode);
   }
 }
 

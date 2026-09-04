@@ -1,11 +1,13 @@
-import type { Url } from "@prisma/client";
+import type { CachedUrl } from "./url.cache.interface";
 
 export interface UrlRepositoryInterface {
   create(
     shortCode: string,
     longUrl: string,
-    expiresAt?: Date
-  ): Promise<Url>;
+    expiresAt: Date | null,
+  ): Promise<CachedUrl>;
 
-  findByShortCode(shortCode: string): Promise<Url | null>;
+  findByShortCode(
+    shortCode: string,
+  ): Promise<CachedUrl | null>;
 }

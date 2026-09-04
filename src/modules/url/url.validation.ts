@@ -1,59 +1,42 @@
 import { AppError } from "../../config/error";
-export function validateLongUrl(
-  longUrl: unknown
-): asserts longUrl is string {
-  if (typeof longUrl !== "string" || longUrl.trim().length === 0) {
-    throw new AppError(400, "longUrl is required");
-  }
 
-  let url: URL;
-
+export function validateLongUrl(longUrl: string): void {
   try {
-    url = new URL(longUrl);
-  } catch {
-    throw new AppError(
-      400,
-      "longUrl must be a valid URL"
-    );
-  }
+    const url = new URL(longUrl);
 
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new AppError(
-      400,
-      "Only HTTP and HTTPS URLs are supported"
-    );
+    if (!["http:", "https:"].includes(url.protocol)) {
+      throw new Error();
+    }
+  } catch {
+    throw new AppError(400, "Invalid URL");
   }
 }
 
 export function validateExpiresAt(
-  expiresAt: unknown
-): Date | undefined {
-  if (expiresAt === undefined) {
-    return undefined;
+  expiresAt?: string | Date | null,
+): Date | null {
+  if (!expiresAt) {
+    return null;
   }
 
-  if (typeof expiresAt !== "string") {
+  const parsedDate =
+    expiresAt instanceof Date
+      ? expiresAt
+      : new Date(expiresAt);
+
+  if (Number.isNaN(parsedDate.getTime())) {
     throw new AppError(
       400,
-      "expiresAt must be a valid ISO date string"
+      "Invalid expiration date",
     );
   }
 
-  const date = new Date(expiresAt);
-
-  if (Number.isNaN(date.getTime())) {
+  if (parsedDate <= new Date()) {
     throw new AppError(
       400,
-      "expiresAt must be a valid ISO date string"
+      "Expiration date must be in the future",
     );
   }
 
-  if (date.getTime() <= Date.now()) {
-    throw new AppError(
-      400,
-      "expiresAt must be in the future"
-    );
-  }
-
-  return date;
+  return parsedDate;
 }

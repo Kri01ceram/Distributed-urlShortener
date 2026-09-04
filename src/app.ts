@@ -1,20 +1,16 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-
 import healthRouter from "./routes/heaalth.routes";
 import { createUrlRouter } from "./modules/url/url.routes";
 
 export function createApp(workerId: bigint) {
   const app = express();
-  app.use((req, res, next) => {
-  res.setHeader(
-    "X-Worker-ID",
-    workerId.toString()
-  );
 
-  next();
-});
+  app.use((req, res, next) => {
+    res.setHeader("X-Worker-ID", workerId.toString());
+    next();
+  });
 
   app.use(helmet());
   app.use(cors());
@@ -27,15 +23,9 @@ export function createApp(workerId: bigint) {
     controller: urlController,
   } = createUrlRouter(workerId);
 
-  app.use(
-    "/api/v1/urls",
-    urlRouter
-  );
+  app.use("/api/v1/urls", urlRouter);
 
-  app.get(
-    "/:shortCode",
-    urlController.redirect
-  );
+  app.get("/:shortCode", urlController.redirect);
 
   return app;
 }
