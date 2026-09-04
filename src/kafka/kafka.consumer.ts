@@ -1,6 +1,4 @@
 import type { Consumer, EachMessagePayload } from "kafkajs";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-
 import { kafka } from "./kafka.client";
 import { prisma } from "../config/database";
 import type { UrlRedirectedEvent } from "./kafka.types";
@@ -30,28 +28,18 @@ function parseRedirectEvent(value: string): UrlRedirectedEvent {
 }
 
 async function persistRedirectEvent(event: UrlRedirectedEvent): Promise<void> {
-  try {
-    await prisma.redirectEvent.create({
-      data: {
-        eventId: event.eventId,
-        eventType: event.eventType,
-        urlId: BigInt(event.urlId),
-        shortCode: event.shortCode,
-        userAgent: event.userAgent,
-        referer: event.referer,
-        occurredAt: new Date(event.timestamp),
-      },
-    });
-  } catch (error: unknown) {
-    if (
-      error instanceof PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return;
-    }
-
-    throw error;
-  }
+  await prisma.redirectEvent.createMany({
+    data: {
+      eventId: event.eventId,
+      eventType: event.eventType,
+      urlId: BigInt(event.urlId),
+      shortCode: event.shortCode,
+      userAgent: event.userAgent,
+      referer: event.referer,
+      occurredAt: new Date(event.timestamp),
+    },
+    skipDuplicates: true,
+  });
 }
 
 export async function connectKafkaConsumer(): Promise<void> {
