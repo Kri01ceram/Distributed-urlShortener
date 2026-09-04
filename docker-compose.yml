@@ -33,8 +33,7 @@ services:
 
       DATABASE_URL: "postgresql://url_shortener:url_shortener_password@postgres:5432/url_shortener"
 
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
       KAFKA_REDIRECT_TOPIC: redirect-events
       KAFKA_CLIENT_ID: url-shortener-api
