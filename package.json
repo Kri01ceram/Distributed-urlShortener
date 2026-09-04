@@ -23,10 +23,14 @@
     "prisma": "6",
     "redis": "^6.2.1"
   },
+  
   "scripts": {
     "dev": "bun --watch src/server.ts",
+    "dev:consumer": "bun --watch src/kafka/consumer.server.ts",
     "start": "bun src/server.ts",
+    "start:consumer": "bun src/kafka/consumer.server.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   }
 }
+

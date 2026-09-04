@@ -1,60 +1,54 @@
 import { randomUUID } from "node:crypto";
-import { kafkaProducer } from "./kafka.client";
+
 import type { UrlRedirectedEvent } from "./kafka.types";
+import {
+  kafkaProducer,
+} from "./kafka.client";
 
-const topic = process.env.KAFKA_REDIRECT_TOPIC ?? "redirect-events";
-
-let isConnected = false;
-
-export type PublishUrlRedirectedEventInput = Omit<
-  UrlRedirectedEvent,
-  "eventId" | "eventType" | "timestamp"
->;
+export type PublishUrlRedirectedEventInput = {
+  urlId: string;
+  shortCode: string;
+  userAgent?: string;
+  referer?: string;
+};
 
 export interface UrlRedirectedEventPublisher {
   publishUrlRedirectedEvent(
-    event: PublishUrlRedirectedEventInput,
+    input: PublishUrlRedirectedEventInput,
   ): Promise<void>;
 }
 
 export async function connectKafkaProducer(): Promise<void> {
-  if (isConnected) {
-    return;
-  }
-
   await kafkaProducer.connect();
-  isConnected = true;
+
+  console.log("Kafka producer connected");
 }
 
 export async function disconnectKafkaProducer(): Promise<void> {
-  if (!isConnected) {
-    return;
-  }
-
   await kafkaProducer.disconnect();
-  isConnected = false;
 }
 
 export async function publishUrlRedirectedEvent(
-  event: PublishUrlRedirectedEventInput,
+  input: PublishUrlRedirectedEventInput,
 ): Promise<void> {
-  if (!isConnected) {
-    throw new Error("Kafka producer is not connected");
-  }
-
-  const message: UrlRedirectedEvent = {
-    ...event,
+  const event: UrlRedirectedEvent = {
     eventId: randomUUID(),
     eventType: "url.redirected",
+    urlId: input.urlId,
+    shortCode: input.shortCode,
     timestamp: new Date().toISOString(),
+    userAgent: input.userAgent,
+    referer: input.referer,
   };
 
   await kafkaProducer.send({
-    topic,
+    topic:
+      process.env.KAFKA_REDIRECT_TOPIC ??
+      "redirect-events",
     messages: [
       {
-        key: event.shortCode,
-        value: JSON.stringify(message),
+        key: input.shortCode,
+        value: JSON.stringify(event),
       },
     ],
   });
