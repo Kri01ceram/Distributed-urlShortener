@@ -33,6 +33,11 @@ export function createUrlRouter(
     controller.createUrl
   );
 
+  router.get(
+    "/:shortCode/stats",
+    controller.stats,
+  );
+
   return {
     router,
     controller,

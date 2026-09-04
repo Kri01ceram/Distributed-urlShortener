@@ -23,8 +23,14 @@ async function startServer() {
     await connectRedis();
     console.log("Redis connected");
 
-    await connectKafkaProducer();
-    console.log("Kafka producer connected");
+    try {
+      await connectKafkaProducer();
+    } catch (error) {
+      console.error(
+        "Kafka unavailable at startup; redirects will retry event publishing:",
+        error,
+      );
+    }
 
     workerId = await registerWorker();
     console.log(`Worker ID registered: ${workerId}`);

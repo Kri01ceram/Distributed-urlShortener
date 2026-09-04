@@ -51,4 +51,30 @@ if (typeof shortCode !== "string") {
     handleError(error, res);
   }
 };
+
+  stats = async (req: Request, res: Response) => {
+    try {
+      const shortCode = req.params.shortCode;
+
+      if (typeof shortCode !== "string") {
+        res.status(400).json({
+          message: "Invalid short code",
+        });
+        return;
+      }
+
+      const stats = await this.service.getRedirectStats(shortCode);
+
+      if (!stats) {
+        res.status(404).json({
+          message: "Short URL not found",
+        });
+        return;
+      }
+
+      res.json(stats);
+    } catch (error: unknown) {
+      handleError(error, res);
+    }
+  };
 }

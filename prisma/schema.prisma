@@ -29,6 +29,7 @@ model RedirectEvent {
   createdAt DateTime @default(now())
 
   @@index([urlId])
+  @@index([shortCode])
   @@index([occurredAt])
   @@map("redirect_events")
 }

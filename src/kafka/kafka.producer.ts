@@ -20,12 +20,18 @@ export interface UrlRedirectedEventPublisher {
 
 export async function connectKafkaProducer(): Promise<void> {
   await kafkaProducer.connect();
+  producerConnected = true;
 
   console.log("Kafka producer connected");
 }
 
+let producerConnected = false;
+
 export async function disconnectKafkaProducer(): Promise<void> {
-  await kafkaProducer.disconnect();
+  if (producerConnected) {
+    await kafkaProducer.disconnect();
+    producerConnected = false;
+  }
 }
 
 export async function publishUrlRedirectedEvent(
@@ -41,17 +47,45 @@ export async function publishUrlRedirectedEvent(
     referer: input.referer,
   };
 
-  await kafkaProducer.send({
-    topic:
-      process.env.KAFKA_REDIRECT_TOPIC ??
-      "redirect-events",
-    messages: [
-      {
-        key: input.shortCode,
-        value: JSON.stringify(event),
-      },
-    ],
-  });
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      if (!producerConnected) {
+        await connectKafkaProducer();
+      }
+
+      await kafkaProducer.send({
+        topic:
+          process.env.KAFKA_REDIRECT_TOPIC ??
+          "redirect-events",
+        messages: [
+          {
+            key: input.shortCode,
+            value: JSON.stringify(event),
+          },
+        ],
+      });
+
+      return;
+    } catch (error: unknown) {
+      producerConnected = false;
+
+      try {
+        await kafkaProducer.disconnect();
+      } catch {
+        // The next attempt will create a fresh connection.
+      }
+
+      if (attempt === maxAttempts) {
+        throw error;
+      }
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, attempt * 500);
+      });
+    }
+  }
 }
 
 export const kafkaEventPublisher: UrlRedirectedEventPublisher = {

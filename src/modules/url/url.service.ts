@@ -22,6 +22,17 @@ export class UrlService {
     private readonly eventPublisher?: UrlRedirectedEventPublisher,
   ) {}
 
+  private async withCacheTimeout<T>(operation: Promise<T>): Promise<T> {
+    return Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Cache operation timed out"));
+        }, 750);
+      }),
+    ]);
+  }
+
   async createUrl(data: CreateUrlRequest) {
     validateLongUrl(data.longUrl);
 
@@ -55,14 +66,29 @@ export class UrlService {
   }
 
   async getUrl(shortCode: string) {
-    const cached = await this.cache.get(shortCode);
+    let cached = null;
+
+    try {
+      cached = await this.withCacheTimeout(
+        this.cache.get(shortCode),
+      );
+    } catch (error: unknown) {
+      console.error("Cache read failed; using PostgreSQL:", error);
+    }
 
     if (cached) {
       if (
         cached.expiresAt &&
         cached.expiresAt <= new Date()
       ) {
-        await this.cache.delete(shortCode);
+        try {
+          await this.withCacheTimeout(
+            this.cache.delete(shortCode),
+          );
+        } catch (error: unknown) {
+          console.error("Cache delete failed:", error);
+        }
+
         return null;
       }
 
@@ -82,9 +108,30 @@ export class UrlService {
       return null;
     }
 
-    await this.cache.set(shortCode, url);
+    try {
+      await this.withCacheTimeout(
+        this.cache.set(shortCode, url),
+      );
+    } catch (error: unknown) {
+      console.error("Cache write failed; continuing with PostgreSQL result:", error);
+    }
 
     return url;
+  }
+
+  async getRedirectStats(shortCode: string) {
+    const url = await this.repository.findByShortCode(shortCode);
+
+    if (!url) {
+      return null;
+    }
+
+    const stats = await this.repository.getRedirectStats(url.id);
+
+    return {
+      shortCode: url.shortCode,
+      ...stats,
+    };
   }
 
   async redirectUrl(

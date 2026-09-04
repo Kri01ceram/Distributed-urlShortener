@@ -3,7 +3,10 @@ import { describe, expect, test } from "bun:test";
 
 import { AppError } from "../src/config/error";
 import { UrlService } from "../src/modules/url/url.service";
-import type { UrlRepositoryInterface } from "../src/modules/url/url.repository.interface";
+import type {
+  RedirectStats,
+  UrlRepositoryInterface,
+} from "../src/modules/url/url.repository.interface";
 
 class FakeUrlCodeGenerator {
   private counter = 0;
@@ -40,6 +43,17 @@ class FakeUrlRepository implements UrlRepositoryInterface {
     shortCode: string,
   ): Promise<CachedUrl | null> {
     return this.urls.get(shortCode) ?? null;
+  }
+
+  async getRedirectStats(
+    _urlId: bigint,
+  ): Promise<RedirectStats> {
+    return {
+      totalClicks: 0,
+      lastClickedAt: null,
+      clicksByUserAgent: [],
+      clicksByReferer: [],
+    };
   }
 }
 

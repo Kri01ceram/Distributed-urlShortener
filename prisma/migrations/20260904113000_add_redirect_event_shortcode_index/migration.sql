@@ -1,0 +1,1 @@
+CREATE INDEX "redirect_events_shortCode_idx" ON "redirect_events"("shortCode");
