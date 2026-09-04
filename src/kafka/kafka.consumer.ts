@@ -2,6 +2,7 @@ import type { Consumer, EachMessagePayload } from "kafkajs";
 import { kafka } from "./kafka.client";
 import { prisma } from "../config/database";
 import type { UrlRedirectedEvent } from "./kafka.types";
+import { incrementCounter } from "../observability/metrics";
 
 const consumer: Consumer = kafka.consumer({
   groupId:
@@ -91,6 +92,7 @@ export async function connectKafkaConsumer(): Promise<void> {
             event,
           });
         } catch (error: unknown) {
+          incrementCounter("consumer_processing_failures_total");
           console.error(
             "Failed to process redirect event:",
             error,

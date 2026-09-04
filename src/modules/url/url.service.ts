@@ -13,6 +13,7 @@ import type {
   PublishUrlRedirectedEventInput,
   UrlRedirectedEventPublisher,
 } from "../../kafka/kafka.producer";
+import { incrementCounter } from "../../observability/metrics";
 
 export class UrlService {
   constructor(
@@ -77,6 +78,7 @@ export class UrlService {
     }
 
     if (cached) {
+      incrementCounter("redis_cache_hits_total");
       if (
         cached.expiresAt &&
         cached.expiresAt <= new Date()
@@ -94,6 +96,8 @@ export class UrlService {
 
       return cached;
     }
+
+    incrementCounter("redis_cache_misses_total");
 
     const url = await this.repository.findByShortCode(shortCode);
 

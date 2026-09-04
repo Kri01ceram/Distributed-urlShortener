@@ -4,6 +4,7 @@ import type { UrlRedirectedEvent } from "./kafka.types";
 import {
   kafkaProducer,
 } from "./kafka.client";
+import { incrementCounter } from "../observability/metrics";
 
 export type PublishUrlRedirectedEventInput = {
   urlId: string;
@@ -78,6 +79,7 @@ export async function publishUrlRedirectedEvent(
       }
 
       if (attempt === maxAttempts) {
+        incrementCounter("kafka_publish_failures_total");
         throw error;
       }
 

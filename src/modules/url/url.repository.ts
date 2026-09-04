@@ -3,6 +3,7 @@ import type {
   RedirectStats,
   UrlRepositoryInterface,
 } from "./url.repository.interface";
+import { observeDatabaseQuery } from "../../observability/metrics";
 
 export class UrlRepository implements UrlRepositoryInterface {
   async create(
@@ -10,40 +11,36 @@ export class UrlRepository implements UrlRepositoryInterface {
     longUrl: string,
     expiresAt: Date | null,
   ) {
-    return prisma.url.create({
-      data: {
-        shortCode,
-        longUrl,
-        expiresAt,
-      },
-    });
+    return observeDatabaseQuery(() => prisma.url.create({
+      data: { shortCode, longUrl, expiresAt },
+    }));
   }
 
   async findByShortCode(shortCode: string) {
-    return prisma.url.findUnique({
+    return observeDatabaseQuery(() => prisma.url.findUnique({
       where: {
         shortCode,
       },
-    });
+    }));
   }
 
   async getRedirectStats(urlId: bigint): Promise<RedirectStats> {
     const [aggregate, userAgents, referers] = await Promise.all([
-      prisma.redirectEvent.aggregate({
+      observeDatabaseQuery(() => prisma.redirectEvent.aggregate({
         where: { urlId },
         _count: { _all: true },
         _max: { occurredAt: true },
-      }),
-      prisma.redirectEvent.groupBy({
+      })),
+      observeDatabaseQuery(() => prisma.redirectEvent.groupBy({
         by: ["userAgent"],
         where: { urlId, userAgent: { not: null } },
         _count: { _all: true },
-      }),
-      prisma.redirectEvent.groupBy({
+      })),
+      observeDatabaseQuery(() => prisma.redirectEvent.groupBy({
         by: ["referer"],
         where: { urlId, referer: { not: null } },
         _count: { _all: true },
-      }),
+      })),
     ]);
 
     return {
