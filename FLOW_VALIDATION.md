@@ -602,8 +602,6 @@ Observed results:
 - ✅ p99 latency: 4.26ms
 
 ---
-
-
 ---
 
 ## COMPLETE FLOW SUMMARY
