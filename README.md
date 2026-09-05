@@ -58,7 +58,7 @@ Kafka Event → Consumer → Parse & Validate → Persist to DB
 
 ## 📋 Prerequisites
 
-- **Node.js/Bun**: v1.3.10+ (Bun runtime recommended)
+- **Bun**: v1.3.10+ 
 - **PostgreSQL**: 14+ (with Docker Compose setup included)
 - **Redis**: 7+ (with Docker Compose setup included)
 - **Kafka**: 3.2+ (with Docker Compose setup included)
@@ -457,9 +457,6 @@ Expected performance with proper tuning:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🙋 Support
 
