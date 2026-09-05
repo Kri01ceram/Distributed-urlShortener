@@ -146,8 +146,13 @@ bun run start:consumer
 ### Load Testing
 
 ```bash
-# Start load test against the API
-bun load-tests/redirects.js
+# Run k6 in Docker (works on Windows without installing k6 locally)
+# Replace the short code with one returned by POST /api/v1/urls.
+powershell -ExecutionPolicy Bypass -File .\load-tests\run.ps1 `
+  -ShortCode GO779mWC2q `
+  -Rate 50 `
+  -Vus 10 `
+  -Duration 30s
 ```
 
 ## 📡 API Endpoints
@@ -367,8 +372,8 @@ This allows multiple instances to run concurrently with automatic load distribut
 # Run unit tests
 bun test
 
-# Run load tests
-bun load-tests/redirects.js
+# Run load tests through Docker k6
+powershell -ExecutionPolicy Bypass -File .\load-tests\run.ps1 -ShortCode GO779mWC2q
 ```
 
 ## 🛠️ Project Structure
