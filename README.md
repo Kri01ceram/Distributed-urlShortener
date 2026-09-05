@@ -145,15 +145,40 @@ bun run start:consumer
 
 ### Load Testing
 
-```bash
-# Run k6 in Docker (works on Windows without installing k6 locally)
-# Replace the short code with one returned by POST /api/v1/urls.
-powershell -ExecutionPolicy Bypass -File .\load-tests\run.ps1 `
+The load test is stored in `tests/load-test.redirects.js` and runs with k6.
+It sends requests without following redirects, then verifies the API returns
+HTTP 302 and includes a `Location` header.
+
+#### Prerequisites
+
+- Docker Desktop must be installed and running.
+- The API must be running on port 3000.
+- Create a URL and copy its `shortCode` from the response.
+
+The k6 binary is pulled automatically from the `grafana/k6` Docker image, so
+no Chocolatey, k6 installation, or package dependency is required.
+
+#### Windows PowerShell
+
+Run from the repository root:
+
+```powershell
+.\tests\run-load-test.ps1 `
   -ShortCode GO779mWC2q `
   -Rate 50 `
   -Vus 10 `
+  -MaxVus 100 `
   -Duration 30s
 ```
+
+For a quick smoke test:
+
+```powershell
+.\tests\run-load-test.ps1 -ShortCode GO779mWC2q -Rate 1 -Vus 1 -MaxVus 1 -Duration 1s
+```
+
+For a custom API address, pass `-BaseUrl`, for example
+`-BaseUrl http://host.docker.internal:3001`.
 
 ## 📡 API Endpoints
 
@@ -373,7 +398,7 @@ This allows multiple instances to run concurrently with automatic load distribut
 bun test
 
 # Run load tests through Docker k6
-powershell -ExecutionPolicy Bypass -File .\load-tests\run.ps1 -ShortCode GO779mWC2q
+powershell -ExecutionPolicy Bypass -File .\tests\run-load-test.ps1 -ShortCode GO779mWC2q
 ```
 
 ## 🛠️ Project Structure

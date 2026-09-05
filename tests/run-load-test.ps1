@@ -16,7 +16,7 @@ if (-not $docker) {
 docker run --rm `
   -v "${PWD}:/work" `
   -w /work `
-  grafana/k6 run /work/load-tests/redirects.js `
+  grafana/k6 run /work/tests/load-test.redirects.js `
   -e "BASE_URL=$BaseUrl" `
   -e "SHORT_CODE=$ShortCode" `
   -e "RATE=$Rate" `
