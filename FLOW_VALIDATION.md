@@ -558,6 +558,51 @@ errorHandler middleware
    ├─ timestamp: string
    └─ userAgent?, referer?
 ```
+---
+
+## 14. LOAD TEST VALIDATION
+
+### Files
+
+- `tests/load-test.redirects.js` contains the k6 redirect scenario.
+- `tests/run-load-test.ps1` runs k6 through the `grafana/k6` Docker image.
+
+### Why Docker k6
+
+- k6 uses its own JavaScript runtime and cannot be executed with Bun.
+- Docker avoids adding a platform-specific k6 installation to the repository.
+- Docker Desktop is the only additional local dependency for this test.
+- The container uses `host.docker.internal` to reach the API running on Windows.
+
+### Test Behavior
+
+```text
+k6 constant-arrival-rate scenario
+→ GET /:shortCode without following redirects
+→ Assert HTTP 302
+→ Assert Location header exists
+→ Enforce <1% request failures
+→ Enforce p95 <250ms and p99 <500ms
+```
+
+### Validated Run
+
+Command:
+
+```powershell
+.\tests\run-load-test.ps1 -ShortCode GO779mWC2q -Rate 50 -Vus 10 -MaxVus 100 -Duration 30s
+```
+
+Observed results:
+
+- ✅ 1,501 HTTP requests at approximately 50 requests per second
+- ✅ 0% HTTP request failures
+- ✅ 3,002 checks passed
+- ✅ p95 latency: 3.51ms
+- ✅ p99 latency: 4.26ms
+
+---
+
 
 ---
 
@@ -638,9 +683,9 @@ Every request increments counters
    - Reason: Catch unhandled async errors
 
 3. ✅ **Fixed Prisma v6 Schema** (schema.prisma)
-   - Removed deprecated `url` property from datasource
-   - Created prisma.config.ts for database URL configuration
-   - Reason: Prisma v6 requires datasource configuration via config file
+   - Kept the environment-backed `url = env("DATABASE_URL")` datasource configuration
+   - Added `prisma/prisma.config.ts` for Prisma CLI configuration
+   - Reason: Prisma CLI configuration and runtime datasource configuration must both resolve the database URL
 
 ---
 
@@ -656,6 +701,8 @@ Every request increments counters
 - ✅ Kafka events idempotent (eventId unique)
 - ✅ Worker registry atomic (Redis NX)
 - ✅ Graceful shutdown properly orchestrated
+- ✅ Load test runs through Docker k6 from `tests/`
+- ✅ Load test assertions and latency thresholds passed
 - ✅ All resources cleaned up on exit
 
 ---
