@@ -30,15 +30,17 @@ function parseRedirectEvent(value: string): UrlRedirectedEvent {
 
 async function persistRedirectEvent(event: UrlRedirectedEvent): Promise<void> {
   await prisma.redirectEvent.createMany({
-    data: {
-      eventId: event.eventId,
-      eventType: event.eventType,
-      urlId: BigInt(event.urlId),
-      shortCode: event.shortCode,
-      userAgent: event.userAgent,
-      referer: event.referer,
-      occurredAt: new Date(event.timestamp),
-    },
+    data: [
+      {
+        eventId: event.eventId,
+        eventType: event.eventType,
+        urlId: BigInt(event.urlId),
+        shortCode: event.shortCode,
+        userAgent: event.userAgent,
+        referer: event.referer,
+        occurredAt: new Date(event.timestamp),
+      },
+    ],
     skipDuplicates: true,
   });
 }

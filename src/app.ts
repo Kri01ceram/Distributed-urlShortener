@@ -9,6 +9,7 @@ import {
   observeHistogram,
   renderMetrics,
 } from "./observability/metrics";
+import { errorHandler } from "./middleware/error.middleware";
 
 export function createApp(workerId: bigint) {
   const app = express();
@@ -68,6 +69,8 @@ export function createApp(workerId: bigint) {
   });
 
   app.get("/:shortCode", urlController.redirect);
+
+  app.use(errorHandler);
 
   return app;
 }
